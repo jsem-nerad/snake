@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vojt Snake Game</title>
+
+
+  <meta property="og:title" content="Snake Game" />
+<meta property="og:description" content="Vojtikovo test game" />
+<meta property="og:url" content="https://snake.vojtikdortik.eu" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Snake Game" />
+
+
+
+
+
+
+
+
+
+
+  <style>
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: black;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .game-container {
+      display: grid;
+      grid-template-columns: repeat(20, 20px);
+      grid-template-rows: repeat(20, 20px);
+      gap: 1px;
+      background-color: #333;
+    }
+
+    .cell {
+      width: 20px;
+      height: 20px;
+      background-color: #4a4a4a;
+    }
+
+    .snake {
+      background-color: lime;
+    }
+
+    .food {
+      background-color: red;
+    }
+
+    .score {
+      margin-top: 10px;
+      font-size: 18px;
+    }
+
+    .game-over {
+      margin-top: 15px;
+      font-size: 20px;
+      color: red;
+    }
+
+    .btn {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: lime;
+      color: black;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .btn:hover {
+      background-color: darkgreen;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-end;
+      margin-top: 20px;
+    }
+
+    .control-button {
+      width: 60px;
+      height: 60px;
+      margin: 5px;
+      background-color: #555;
+      color: white;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+    }
+
+    .control-button:hover {
+      background-color: #777;
+    }
+
+    @media (max-width: 768px) {
+      .game-container {
+        grid-template-columns: repeat(20, 4vw);
+        grid-template-rows: repeat(20, 4vw);
+      }
+
+      .cell {
+        width: 4vw;
+        height: 4vw;
+      }
+
+      .control-button {
+        width: 50px;
+        height: 50px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>tikVoj Snake Test</h1>
+  <div class="game-container" id="game"></div>
+  <div class="score">Score: <span id="score">0</span></div>
+  <div class="score">Highscore: <span id="highscore">0</span></div>
+  <div class="game-over" id="game-over" style="display: none;">Game Over!</div>
+  <button class="btn" id="play-again" style="display: none;">Play Again</button>
+
+  <div class="controls">
+    <button class="control-button" id="left">◄</button>
+    <div>
+      <button class="control-button" id="up">▲</button>
+      <button class="control-button" id="down">▼</button>
+    </div>
+    <button class="control-button" id="right">►</button>
+  </div>
+
+  <script>
+    const gameContainer = document.getElementById('game');
+    const scoreDisplay = document.getElementById('score');
+    const highscoreDisplay = document.getElementById('highscore');
+    const gameOverDisplay = document.getElementById('game-over');
+    const playAgainButton = document.getElementById('play-again');
+
+    // Control Buttons
+    const upButton = document.getElementById('up');
+    const downButton = document.getElementById('down');
+    const leftButton = document.getElementById('left');
+    const rightButton = document.getElementById('right');
+
+    // Create grid
+    const gridSize = 20;
+    const cells = [];
+    for (let i = 0; i < gridSize * gridSize; i++) {
+      const cell = document.createElement('div');
+      cell.classList.add('cell');
+      gameContainer.appendChild(cell);
+      cells.push(cell);
+    }
+
+    // Initial Snake and Food Setup
+    let snake = [2, 1, 0]; // Snake starts with 3 cells
+    let direction = 1; // Moving right
+    let food = Math.floor(Math.random() * cells.length);
+    let score = 0;
+    let highscore = localStorage.getItem('highscore') || 0;
+    highscoreDisplay.textContent = highscore;
+    let gameInterval;
+
+    // Draw Snake and Food
+    function draw() {
+      cells.forEach(cell => cell.classList.remove('snake', 'food'));
+      snake.forEach(index => cells[index].classList.add('snake'));
+      cells[food].classList.add('food');
+    }
+
+    // Move Snake
+    function move() {
+      const head = snake[0] + direction;
+      snake.unshift(head);
+
+      // Check for food collision
+      if (head === food) {
+        score++;
+        scoreDisplay.textContent = score;
+        food = Math.floor(Math.random() * cells.length);
+      } else {
+        snake.pop(); // Remove tail if no food eaten
+      }
+
+      // Check for wall or self collision
+      if (
+        (head < 0 || head >= gridSize * gridSize) || // Out of bounds
+        (direction === 1 && head % gridSize === 0) || // Hit right wall
+        (direction === -1 && head % gridSize === gridSize - 1) || // Hit left wall
+        cells[head]?.classList.contains('snake') // Hit itself
+      ) {
+        clearInterval(gameInterval);
+        gameOver();
+        return;
+      }
+
+      draw();
+    }
+
+    // Game Over
+    function gameOver() {
+      gameOverDisplay.style.display = 'block';
+      playAgainButton.style.display = 'block';
+      if (score > highscore) {
+        highscore = score;
+        highscoreDisplay.textContent = highscore;
+        localStorage.setItem('highscore', highscore);
+      }
+    }
+
+    // Change Direction
+    function changeDirection(newDirection) {
+      if (newDirection === -gridSize && direction !== gridSize) direction = -gridSize;
+      if (newDirection === gridSize && direction !== -gridSize) direction = gridSize;
+      if (newDirection === -1 && direction !== 1) direction = -1;
+      if (newDirection === 1 && direction !== -1) direction = 1;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp') changeDirection(-gridSize);
+      if (e.key === 'ArrowDown') changeDirection(gridSize);
+      if (e.key === 'ArrowLeft') changeDirection(-1);
+      if (e.key === 'ArrowRight') changeDirection(1);
+    });
+
+    upButton.addEventListener('click', () => changeDirection(-gridSize));
+    downButton.addEventListener('click', () => changeDirection(gridSize));
+    leftButton.addEventListener('click', () => changeDirection(-1));
+    rightButton.addEventListener('click', () => changeDirection(1));
+
+    // Play Again
+    playAgainButton.addEventListener('click', () => {
+      score = 0;
+      scoreDisplay.textContent = score;
+      snake = [2, 1, 0];
+      direction = 1;
+      food = Math.floor(Math.random() * cells.length);
+      gameOverDisplay.style.display = 'none';
+      playAgainButton.style.display = 'none';
+      draw();
+      gameInterval = setInterval(move, 200);
+    });
+
+    // Start Game
+    draw();
+    gameInterval = setInterval(move, 200);
+  </script>
+</body>
+</html>
